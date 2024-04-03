@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CC Room</title>
+    <meta http-equiv="content-type" content="Cache-Control: no-cache, no-store, must-revalidate">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            background-image: url('https://file.51pptmoban.com/d/file/2014/05/13/d12562dabc94ff6130521134133b5d3d.jpg');
+        }
+
+        .chat-room {
+            height: calc(100vh - 30px);
+            margin: 15px;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #666;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .messages {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+            font-size: 20px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        input[type="text"] {
+            font-size: 20px;
+            line-height: 30px;
+            border: none;
+            outline: none;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+            background-color: #f9f9f9;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .loading-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<div id="loading-screen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <p>Loading...</p>
+</div>
+<div class="container main-content" id="main-content" style="display: none;">
+    <div id="app" class="chat-room">
+        <div class="messages">
+            <div v-for="message in messages" class="message">
+                <markdown :source="message.text"></markdown>
+            </div>
+        </div>
+        <input v-if="!apiKey" type="text" v-model.trim="apiKeyInput" @keyup.enter="saveApiKey" placeholder="Please enter your API key">
+        <input v-if="apiKey" type="text" v-model.trim="newMessage" @keyup.enter="sendMessage" @dblclick="inputDblclick()" @focus="inputFocus()" placeholder="Click to input a question, press Enter to send" />
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.0/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.js"></script>
+<link href="https://cdn.bootcdn.net/ajax/libs/zui/1.9.1/css/zui.css" rel="stylesheet">
+<script>
+    Vue.component('markdown', {
+        props: ['source'],
+        computed: {
+            compiledMarkdown: function () {
+                return window.markdownit().render(this.source);
+            }
+        },
+        template: '<div v-html="compiledMarkdown"></div>'
+    });
+    new Vue({
+        el: '#app',
+        data: {
+            messages: [],
+            sendMessages: [],
+            sendMessagesBak: [],
+            content: {},
+            newMessage: '',
+            model: 'gpt-3.5-turbo-1106',
+            api: 'https://api.openai-proxy.com',
+            apiKey: localStorage.getItem('apiKey'),
+            apiKeyInput: '',
+            user: 'You: ',
+            bot: 'CC: ',
+        },
+        created() {
+            if (this.apiKey) {
+                this.loadChatRoom();
+            } else {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            }
+        },
+        methods: {
+            inputFocus() {
+                this.newMessage = '';
+            },
+            inputDblclick() {
+                if (document.querySelector('input').disabled) {
+                    location.reload();
+                } else {
+                    this.messages = [];
+                    this.sendMessages = this.sendMessagesBak;
+                    this.newMessage = '';
+                }
+            },
+            sendMessage() {
+                if (this.newMessage.trim() !== '') {
+                    document.querySelector('input').disabled = true;
+                    this.messages.push({text: this.user + this.newMessage, sender: 'user'});
+                    this.sendMessages.push({'role': 'user', 'content': this.newMessage});
+                    this.replyStream2();
+                    this.newMessage = 'Please wait for the reply...';
+                }
+            },
+            resetInput(){
+                let inputField = document.querySelector('input');
+                inputField.disabled = false;
+                inputField.focus();
+                this.newMessage = '';
+            },
+            replyStream2(){
+                this.messages.push(
+                    {text: this.bot, sender: 'assistant'},
+                    {text: '', sender: 'assistant'}
+                );
+                this.replyStream(this.content);
+            },
+            replyStream(content) {
+                let that = this;
+                let thatMessages = that.messages;
+                fetch(this.api + '/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + this.apiKey,
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify(content)
+                }).then(response => {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+
+                    return reader.read().then(function processResult(result) {
+                        if (result.done) {
+                            that.newMessage = '';
+                            that.resetInput();
+                            that.sendMessages.push({
+                                'role': 'assistant',
+                                'content': thatMessages[thatMessages.length - 1].text
+                            });
+                            return;
+                        }
+                        let message= decoder.decode(result.value, { stream: true });
+                        thatMessages[thatMessages.length - 1].text += message
+                            .split('\n')
+                            .filter(item => item !== '')
+                            .map(item => item.replace('data:', ''))
+                            .map(itemText => {
+                                try {
+                                    return JSON.parse(itemText).choices[0].delta.content;
+                                } catch (e) {
+                                    return '';
+                                }
+                            })
+                            .join('');
+                        return reader.read().then(processResult);
+                    });
+                }).catch(error => {
+                    that.messages.push({ text: that.bot + error.message, sender: 'assistant' });
+                    localStorage.removeItem('apiKey');
+                    that.apiKey = null;
+                });
+            },
+            saveApiKey() {
+                if (this.apiKeyInput.trim() !== '') {
+                    localStorage.setItem('apiKey', this.apiKeyInput.trim());
+                    this.apiKey = this.apiKeyInput.trim();
+                    this.apiKeyInput = '';
+                    this.loadChatRoom();
+                }
+            },
+            loadChatRoom() {
+                this.sendMessages = this.sendMessagesBak;
+                this.content = {
+                    model: this.model,
+                    stream: true,
+                    messages: this.sendMessages
+                };
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            }
+        }
+    });
+</script>
+</body>
+</html>
