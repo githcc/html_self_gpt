@@ -6,5 +6,6 @@
 1. 使用vue
 2. 使用fetch
 
-## 例子
-![](gif/20240403_175346.gif)
+## 视频
+1. [b站](https://www.bilibili.com/video/BV1kx421m72v/)
+
