@@ -40,17 +40,17 @@
             <div class="input-container" v-if="apiKey">
                 <textarea v-model="currentMessage" placeholder="Type your message..."></textarea>
                 <button @click="sendMessage">Send</button>
+                <button @click="clearMessage">Clear</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.bootcdn.net/vue/2.6.10/vue.min.js"></script>
-<script src="https://cdn.bootcdn.net/axios/0.19.0/axios.min.js"></script>
-<script src="https://cdn.bootcdn.net/markdown-it/10.0.0/markdown-it.min.js"></script>
-<link href="https://cdn.bootcdn.net/ajax/libs/zui/1.9.1/css/zui.css" rel="stylesheet">
-<link href="css/index.css" rel="stylesheet">
-<script src="js/data.js"></script>
+<script src="js/vue.min.js"></script>
+<script src="js/markdown-it.min.js"></script>
+<link href="css/http_cdn.bootcdn.net_ajax_libs_zui_1.9.1_css_zui.css" rel="stylesheet">
+<link href="css/gpt.css" rel="stylesheet">
+<script src="js/gptData.js"></script>
 <script>
     Vue.component('markdown', {
         props: ['source'],
@@ -66,8 +66,10 @@
         data: {
             currentConversation: 0,
             currentMessage: '',
-            api: 'https://api.openai-proxy.com',
-            apiKey: localStorage.getItem('apiKey'),
+            // api: 'https://api.openai-proxy.com',
+            // apiKey: localStorage.getItem('apiKey'),
+            api: 'https://119.91.23.137:9090',
+            apiKey: 'sk-lRYuWquUBnEjE5D45zWgT3BlbkFJIdYRby9YEo2SsKjU8'+'123',
             content: {
                 model: 'gpt-3.5-turbo-1106',
                 stream: true,
@@ -174,6 +176,9 @@
             loadChatRoom() {
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
+            },
+            clearMessage() {
+                this.conversations[this.currentConversation].messages = [];
             }
         }
     });

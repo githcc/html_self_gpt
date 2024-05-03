@@ -2,7 +2,7 @@ body {
     font-family: 'Roboto', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f5f5f5;
+    color: #f0f0f0; /* 更改为浅色文字 */
 }
 
 .container {
@@ -11,16 +11,14 @@ body {
 }
 
 .sidebar {
-    background-color: #fff;
     padding: 20px;
     min-width: 200px;
-    border-right: 1px solid #e0e0e0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-right: 1px solid #414141; /* 更改为略暗色边框 */
 }
 
 .sidebar h2 {
     margin-top: 0;
-    color: #424242;
+    color: #d0d0d0; /* 更改为浅色标题 */
     font-size: 18px;
     font-weight: 500;
 }
@@ -33,37 +31,32 @@ body {
 .sidebar li {
     margin-bottom: 12px;
     cursor: pointer;
-    color: #616161;
+    color: #b0b0b0; /* 更改为浅色列表项 */
     font-size: 14px;
     padding: 8px 12px;
     border-radius: 4px;
-    transition: background-color 0.3s ease;
 }
 
 .sidebar li:hover {
-    background-color: #f5f5f5;
+    background-color: #2b2b2b; /* 更改为略深的悬停颜色 */
 }
 
 .sidebar li.active {
-    background-color: #e0e0e0;
     font-weight: 500;
-    color: #212121;
+    color: #e0e0e0; /* 更改为浅色活跃项 */
 }
 
 .chat-container {
     flex-grow: 1;
     padding: 20px;
-    background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
 }
 
 .message-container {
     height: 80vh;
     overflow-y: scroll;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #414141; /* 更改为略暗色边框 */
     padding: 10px;
-    background-color: #f5f5f5;
     border-radius: 4px;
 }
 
@@ -71,8 +64,7 @@ body {
     margin-bottom: 12px;
     padding: 8px 12px;
     border-radius: 4px;
-    background-color: #e0e0e0;
-    color: #424242;
+    color: #d0d0d0; /* 更改为浅色消息 */
     font-size: 14px;
 }
 
@@ -85,30 +77,29 @@ body {
     flex-grow: 1;
     resize: none;
     padding: 10px 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #414141; /* 更改为略暗色边框 */
     border-radius: 4px;
     font-family: 'Roboto', Arial, sans-serif;
     font-size: 14px;
-    color: #424242;
+    color: #d0d0d0; /* 更改为浅色输入文字 */
+    background-color: #2b2b2b; /* 更改为略深的输入框背景色 */
 }
 
 .input-container button {
     margin-left: 10px;
-    background-color: #2196f3;
-    color: #fff;
+    color: #f0f0f0; /* 更改为浅色按钮文字 */
+    background-color: #424242; /* 更改为略深的按钮背景色 */
     border: none;
     padding: 8px 16px;
     border-radius: 4px;
     font-family: 'Roboto', Arial, sans-serif;
     font-size: 14px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
 .input-container button:hover {
-    background-color: #1976d2;
+    background-color: #515151; /* 更改为略深的悬停按钮背景色 */
 }
-
 
 .loading-screen {
     display: flex;
@@ -119,12 +110,12 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
     z-index: 9999;
+    background-color: rgba(28, 28, 28, 0.8); /* 更改为暗黑背景色 */
 }
 
 .loading-spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
+    border: 4px solid rgba(240, 240, 240, 0.1); /* 更改为浅色 */
     border-top: 4px solid #3498db;
     border-radius: 50%;
     width: 50px;
