@@ -13,3 +13,6 @@
 ## 视频
 1. [b站](https://www.bilibili.com/video/BV1kx421m72v/)
 
+## 参考资料
+1. github
+   1. [lobehub](https://github.com/lobehub/lobe-chat)
