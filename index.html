@@ -170,7 +170,7 @@
                 document.getElementById('app').style.display = 'block';
             },
             clearMessage() {
-                this.conversations[this.currentConversation].messages = [];
+                this.conversations[this.currentConversation].messages = [this.conversations[this.currentConversation].messages[0]];
             }
         }
     });
