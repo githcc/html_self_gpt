@@ -41,7 +41,7 @@
                 <button @click="saveApiKey">Send</button>
             </div>
             <div class="input-container" v-if="apiKey">
-                <textarea v-model="currentMessage" placeholder="Type your message..."></textarea>
+                <textarea v-model="currentMessage" placeholder="Type your message..." @keydown.ctrl.enter="sendMessage"></textarea>
                 <button @click="sendMessage">Send</button>
                 <button @click="clearMessage">Clear</button>
             </div>
