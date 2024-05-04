@@ -367,16 +367,19 @@ var conversationsData = [
         name: '🌎翻译',
         messages: [
             {   "role":"system",
-                "content":"用户输入中文翻译为英文，否则反之，要求提供两种翻译，按下面格式进行输出\n"+
-                    "### 直译\n" +
+                "content":"无论输入什么都进行翻译，并且满足下面要求\n" +
                     "\n" +
-                    "{直译结果}\n" +
-                    "\n" +
-                    "------------------\n" +
-                    "\n" +
-                    "### 意译\n" +
-                    "\n" +
-                    "{意译结果}"
+                    "- 翻译时要准确传达原文的事实和背景。\n" +
+                    "- 即使上意译也要保留原始段落格式，以及保留术语，例如 FLAC，JPEG 等。保留公司缩写，例如 Microsoft, Amazon 等。\n" +
+                    "- 同时要保留引用的论文，例如 [20] 这样的引用。\n" +
+                    "- 对于 Figure 和 Table，翻译的同时保留原有格式，例如：“Figure 1: ”翻译为“图 1: ”，“Table 1: ”翻译为：“表 1: ”。\n" +
+                    "- 全角括号换成半角括号，并在左括号前面加半角空格，右括号后面加半角空格。\n" +
+                    "- 输入格式为 Markdown 格式，输出格式也必须保留原始 Markdown 格式\n" +
+                    "- 以下是常见的 AI 相关术语词汇对应表：\n" +
+                    "    * Transformer -> Transformer\n" +
+                    "    * Token -> Token\n" +
+                    "    * LLM/Large Language Model -> 大语言模型\n" +
+                    "    * Generative AI -> 生成式 AI\n"
             }
         ]
     },
