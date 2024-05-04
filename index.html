@@ -5,6 +5,8 @@
     <title>CC Room</title>
     <meta http-equiv="content-type" content="Cache-Control: no-cache, no-store, must-revalidate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+    <link href="css/http_cdn.bootcdn.net_ajax_libs_zui_1.9.1_css_zui.css" rel="stylesheet">
+    <link href="css/gpt.css" rel="stylesheet">
 </head>
 <body>
 <div id="loading-screen" class="loading-screen">
@@ -26,10 +28,11 @@
         <div class="chat-container">
             <div class="message-container" id="message-container">
                 <div class="messages">
+                    <div v-text="conversations[currentConversation].name"></div>
                     <div v-for="(messageItem, index) in conversations[currentConversation].messages"
                          :key="index" class="message">
                         [{{ messageItem.role }}]
-                        <markdown :source="messageItem.content"></markdown>
+                        <pre v-text="messageItem.content"></pre>
                     </div>
                 </div>
             </div>
@@ -47,20 +50,8 @@
 </div>
 
 <script src="js/vue.min.js"></script>
-<script src="js/markdown-it.min.js"></script>
-<link href="css/http_cdn.bootcdn.net_ajax_libs_zui_1.9.1_css_zui.css" rel="stylesheet">
-<link href="css/gpt.css" rel="stylesheet">
 <script src="js/gptData.js"></script>
 <script>
-    Vue.component('markdown', {
-        props: ['source'],
-        computed: {
-            compiledMarkdown: function () {
-                return window.markdownit().render(this.source);
-            }
-        },
-        template: '<div v-html="compiledMarkdown"></div>'
-    });
     new Vue({
         el: '#app',
         data: {
@@ -75,7 +66,8 @@
                 stream: true,
                 messages: {}
             },
-            conversations: conversationsData},
+            conversations: conversationsData
+        },
         created() {
             // Your existing created() logic
             if (this.apiKey) {
