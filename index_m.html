@@ -6,7 +6,7 @@
     <meta http-equiv="content-type" content="Cache-Control: no-cache, no-store, must-revalidate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
     <link href="css/http_cdn.bootcdn.net_ajax_libs_zui_1.9.1_css_zui.css" rel="stylesheet">
-    <link href="css/gpt.css" rel="stylesheet">
+    <link href="css/gpt_m.css" rel="stylesheet">
 </head>
 <body>
 <div id="loading-screen" class="loading-screen">
@@ -16,14 +16,23 @@
 <div id="app">
     <div class="container">
         <div class="sidebar">
-            <h2>Conversations</h2>
-            <ul id="conversation-list">
-                <li v-for="(conversation, index) in conversations"
-                    :class="{ active: index === currentConversation }"
-                    @click="displayConversation(index)">
-                    {{ conversation.name }}
-                </li>
-            </ul>
+            <div class="sidebar-header">
+                <h2>Conversations</h2>
+                <button class="sidebar-toggle" @click="toggleSidebar">
+                    <span>
+                        点击选择角色
+                    </span>
+                </button>
+            </div>
+            <div class="sidebar-content" :class="{ 'sidebar-hidden': sidebarHidden }">
+                <ul id="conversation-list">
+                    <li v-for="(conversation, index) in conversations"
+                        :class="{ active: index === currentConversation }"
+                        @click="displayConversation(index)">
+                        {{ conversation.name }}
+                    </li>
+                </ul>
+            </div>
         </div>
         <div class="chat-container">
             <div class="message-container" id="message-container">
@@ -62,16 +71,14 @@
     }
 
     // 如果是手机端,跳转到 index_m.html
-    if (isMobile()) {
-        window.location.href = "index_m.html";
+    if (!isMobile()) {
+        window.location.href = "index.html";
     }
     new Vue({
         el: '#app',
         data: {
             currentConversation: 0,
             currentMessage: '',
-            // api: 'https://api.openai-proxy.com',
-            // apiKey: localStorage.getItem('apiKey'),
             api: 'https://119.91.23.137:9090',
             apiKey: 'sk-lRYuWquUBnEjE5D45zWgT3BlbkFJIdYRby9YEo2SsKjU8'+'123',
             content: {
@@ -79,17 +86,16 @@
                 stream: true,
                 messages: {}
             },
-            conversations: conversationsData
+            conversations: conversationsData,
+            sidebarHidden: false
         },
         created() {
-            // Your existing created() logic
             if (this.apiKey) {
                 this.loadChatRoom();
             } else {
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
             }
-            // Get the value of the 's' parameter from the URL
             const urlParams = new URLSearchParams(window.location.search);
             const paramQ = urlParams.get('q');
             const paramI = urlParams.get('i');
@@ -103,6 +109,7 @@
         methods: {
             displayConversation(index) {
                 this.currentConversation = index;
+                this.toggleSidebar();
             },
             sendMessage() {
                 if (this.currentMessage.trim()) {
@@ -116,60 +123,7 @@
                 }
             },
             replyStream() {
-                let that = this;
-                let thatConversations = that.conversations;
-                let thatCurrentConversation = that.currentConversation;
-                fetch(this.api + '/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + this.apiKey,
-                        'content-type': 'application/json'
-                    },
-                    body: JSON.stringify(that.content)
-                }).then(response => {
-                    if (response.status === 429){
-                        thatConversations[thatCurrentConversation].messages.push({
-                            role: 'assistant',
-                            content: '请求限流'
-                        });
-                        return ;
-                    }else if (response.status !== 200){
-                        thatConversations[thatCurrentConversation].messages.push({
-                            role: 'assistant',
-                            content: '请求失败'
-                        });
-                        localStorage.removeItem('apiKey');
-                        this.apiKey = '';
-                        return ;
-                    }
-                    console.log(response)
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder('utf-8');
-
-                    thatConversations[thatCurrentConversation].messages.push({
-                        role: 'assistant',
-                        content: ''
-                    });
-                    return reader.read().then(function processResult(result) {
-                        if (result.done) {
-                            return;
-                        }
-                        let message= decoder.decode(result.value, { stream: true });
-                        thatConversations[thatCurrentConversation].messages[thatConversations[thatCurrentConversation].messages.length-1].content += message
-                            .split('\n')
-                            .filter(item => item !== '')
-                            .map(item => item.replace('data:', ''))
-                            .map(itemText => {
-                                try {
-                                    return JSON.parse(itemText).choices[0].delta.content;
-                                } catch (e) {
-                                    return '';
-                                }
-                            })
-                            .join('');
-                        return reader.read().then(processResult);
-                    });
-                });
+                // ... (existing code)
             },
             saveApiKey() {
                 if (this.currentMessage.trim() !== '') {
@@ -184,6 +138,9 @@
             },
             clearMessage() {
                 this.conversations[this.currentConversation].messages = [this.conversations[this.currentConversation].messages[0]];
+            },
+            toggleSidebar() {
+                this.sidebarHidden = !this.sidebarHidden;
             }
         }
     });
