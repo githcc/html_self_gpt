@@ -183,7 +183,11 @@
                 document.getElementById('app').style.display = 'block';
             },
             clearMessage() {
-                this.conversations[this.currentConversation].messages = [this.conversations[this.currentConversation].messages[0]];
+                if (this.currentConversation === 0){
+                    this.conversations[this.currentConversation].messages = [];
+                }else{
+                    this.conversations[this.currentConversation].messages = [this.conversations[this.currentConversation].messages[0]];
+                }
             }
         }
     });

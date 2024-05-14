@@ -34,7 +34,7 @@
                 </ul>
             </div>
         </div>
-        <div class="chat-container">
+        <div class="chat-container" :class="{ 'sidebar-hidden': !sidebarHidden }">
             <div class="message-container" id="message-container">
                 <div class="messages">
                     <div v-text="conversations[currentConversation].name"></div>
@@ -87,7 +87,7 @@
                 messages: {}
             },
             conversations: conversationsData,
-            sidebarHidden: false
+            sidebarHidden: true
         },
         created() {
             if (this.apiKey) {
@@ -190,7 +190,11 @@
                 document.getElementById('app').style.display = 'block';
             },
             clearMessage() {
-                this.conversations[this.currentConversation].messages = [this.conversations[this.currentConversation].messages[0]];
+                if (this.currentConversation === 0){
+                    this.conversations[this.currentConversation].messages = [];
+                }else{
+                    this.conversations[this.currentConversation].messages = [this.conversations[this.currentConversation].messages[0]];
+                }
             },
             toggleSidebar() {
                 this.sidebarHidden = !this.sidebarHidden;
