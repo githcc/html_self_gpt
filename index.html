@@ -37,10 +37,18 @@
                 </div>
             </div>
             <div class="input-container" v-if="!apiKey">
+                <select v-model="currentApiProvider">
+                    <option value="openai">OpenAI</option>
+                    <option value="gemini">Gemini</option>
+                </select>
                 <textarea v-model="currentMessage" placeholder="Please enter your API key"></textarea>
                 <button @click="saveApiKey">Send</button>
             </div>
             <div class="input-container" v-if="apiKey">
+                <select v-model="currentApiProvider">
+                    <option value="openai">OpenAI</option>
+                    <option value="gemini">Gemini</option>
+                </select>
                 <textarea v-model="currentMessage" placeholder="Type your message..." @keydown.ctrl.enter="sendMessage"></textarea>
                 <button @click="sendMessage">Send</button>
                 <button @click="clearMessage">Clear</button>
@@ -73,7 +81,8 @@
             // api: 'https://api.openai-proxy.com',
             // apiKey: localStorage.getItem('apiKey'),
             api: 'https://119.91.23.137:9090',
-            apiKey: 'sk-lRYuWquUBnEjE5D45zWgT3BlbkFJIdYRby9YEo2SsKjU8'+'123',
+            currentApiProvider: 'gemini',
+            apiKey: 'sk-key',
             content: {
                 model: 'gpt-3.5-turbo-1106',
                 stream: true,
@@ -89,14 +98,18 @@
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
             }
-            // Get the value of the 's' parameter from the URL
             const urlParams = new URLSearchParams(window.location.search);
+            // question
             const paramQ = urlParams.get('q');
+            // index
             const paramI = urlParams.get('i');
+            // type
+            const paramT = urlParams.get('t');
 
             if (paramQ) {
                 this.currentMessage = paramQ;
                 this.currentConversation = paramI;
+                this.currentApiProvider = paramT;
                 this.sendMessage();
             }
         },
@@ -119,57 +132,109 @@
                 let that = this;
                 let thatConversations = that.conversations;
                 let thatCurrentConversation = that.currentConversation;
-                fetch(this.api + '/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + this.apiKey,
-                        'content-type': 'application/json'
-                    },
-                    body: JSON.stringify(that.content)
-                }).then(response => {
-                    if (response.status === 429){
-                        thatConversations[thatCurrentConversation].messages.push({
-                            role: 'assistant',
-                            content: '请求限流'
-                        });
-                        return ;
-                    }else if (response.status !== 200){
-                        thatConversations[thatCurrentConversation].messages.push({
-                            role: 'assistant',
-                            content: '请求失败'
-                        });
-                        localStorage.removeItem('apiKey');
-                        this.apiKey = '';
-                        return ;
-                    }
-                    console.log(response)
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder('utf-8');
 
-                    thatConversations[thatCurrentConversation].messages.push({
-                        role: 'assistant',
-                        content: ''
+                if (this.currentApiProvider === 'openai') {
+                    fetch(this.api + '/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + this.apiKey,
+                            'content-type': 'application/json'
+                        },
+                        body: JSON.stringify(that.content)
+                    }).then(response => {
+                        if (response.status === 429){
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: '请求限流'
+                            });
+                            return ;
+                        }else if (response.status !== 200){
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: '请求失败'
+                            });
+                            localStorage.removeItem('apiKey');
+                            this.apiKey = '';
+                            return ;
+                        }
+                        console.log(response)
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder('utf-8');
+
+                        thatConversations[thatCurrentConversation].messages.push({
+                            role: 'assistant',
+                            content: ''
+                        });
+                        return reader.read().then(function processResult(result) {
+                            if (result.done) {
+                                return;
+                            }
+                            let message= decoder.decode(result.value, { stream: true });
+                            thatConversations[thatCurrentConversation].messages[thatConversations[thatCurrentConversation].messages.length-1].content += message
+                                .split('\n')
+                                .filter(item => item !== '')
+                                .map(item => item.replace('data:', ''))
+                                .map(itemText => {
+                                    try {
+                                        return JSON.parse(itemText).choices[0].delta.content;
+                                    } catch (e) {
+                                        return '';
+                                    }
+                                })
+                                .join('');
+                            return reader.read().then(processResult);
+                        });
                     });
-                    return reader.read().then(function processResult(result) {
-                        if (result.done) {
+                } else {
+                    let that = this;
+
+                    fetch(this.api +'/v1/models/gemini-pro:generateContent', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(that.convertJsonFormat(that.content))
+                    }).then(response => {
+                        if (response.status !== 200) {
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: 'Request failed'
+                            });
                             return;
                         }
-                        let message= decoder.decode(result.value, { stream: true });
-                        thatConversations[thatCurrentConversation].messages[thatConversations[thatCurrentConversation].messages.length-1].content += message
-                            .split('\n')
-                            .filter(item => item !== '')
-                            .map(item => item.replace('data:', ''))
-                            .map(itemText => {
-                                try {
-                                    return JSON.parse(itemText).choices[0].delta.content;
-                                } catch (e) {
-                                    return '';
-                                }
-                            })
-                            .join('');
-                        return reader.read().then(processResult);
+
+                        response.json().then(data => {
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: data.candidates[0].content.parts[0].text
+                            });
+                        });
                     });
-                });
+                }
+            },
+            convertJsonFormat(inputJson) {
+                // 创建目标JSON格式的对象
+                const outputJson = {
+                    contents: []
+                };
+
+                // 遍历输入JSON中的messages数组
+                for (const message of inputJson.messages) {
+                    // 创建目标JSON格式中的content对象
+                    const content = {
+                        role: message.role==="assistant"?"model":message.role,
+                        parts: [
+                            {
+                                text: message.content
+                            }
+                        ]
+                    };
+
+                    // 添加content对象到目标JSON的contents数组中
+                    outputJson.contents.push(content);
+                }
+
+                return outputJson;
             },
             saveApiKey() {
                 if (this.currentMessage.trim() !== '') {
