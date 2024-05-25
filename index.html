@@ -222,7 +222,7 @@
                 for (const message of inputJson.messages) {
                     // 创建目标JSON格式中的content对象
                     const content = {
-                        role: message.role==="assistant"?"model":message.role,
+                        role: message.role==="system"||message.role==="assistant"?"model":message.role,
                         parts: [
                             {
                                 text: message.content
