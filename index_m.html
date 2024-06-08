@@ -75,9 +75,11 @@
         data: {
             currentConversation: 0,
             currentMessage: '',
+            // api: 'https://api.openai-proxy.com',
+            // apiKey: localStorage.getItem('apiKey'),
             api: 'https://119.91.23.137:9090',
             currentApiProvider: 'gemini',
-            apiKey: 'sk-lRYuWquUBnEjE5D45zWgT3BlbkFJIdYRby9YEo2SsKjU8'+'123',
+            apiKey: 'sk-key',
             content: {
                 model: 'gpt-3.5-turbo-1106',
                 stream: true,
@@ -99,7 +101,11 @@
 
             // 如果是手机端,跳转到 index_m.html
             if (!isMobile()) {
-                window.location.href = "index.html?q="+paramQ+"i="+paramI;
+                if (paramQ == null || paramI == null){
+                    window.location.href = "index.html";
+                }else{
+                    window.location.href = "index.html?q="+paramQ+"&i="+paramI;
+                }
             }
             if (paramQ) {
                 this.currentMessage = paramQ;
@@ -112,7 +118,6 @@
                 this.currentConversation = index;
                 this.toggleSidebar();
             },
-
             sendMessage() {
                 if (this.currentMessage.trim()) {
                     this.conversations[this.currentConversation].messages.push({

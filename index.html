@@ -100,7 +100,11 @@
 
             // 如果是手机端,跳转到 index_m.html
             if (isMobile()) {
-                window.location.href = "index_m.html?q="+paramQ+"i="+paramI;
+                if (paramQ == null || paramI == null){
+                    window.location.href = "index_m.html";
+                }else{
+                    window.location.href = "index_m.html?q="+paramQ+"&i="+paramI;
+                }
             }
 
             if (paramQ) {
