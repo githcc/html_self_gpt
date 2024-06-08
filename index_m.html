@@ -70,16 +70,13 @@
         return isMobileDevice;
     }
 
-    // 如果是手机端,跳转到 index_m.html
-    if (!isMobile()) {
-        window.location.href = "index.html";
-    }
     new Vue({
         el: '#app',
         data: {
             currentConversation: 0,
             currentMessage: '',
             api: 'https://119.91.23.137:9090',
+            currentApiProvider: 'gemini',
             apiKey: 'sk-lRYuWquUBnEjE5D45zWgT3BlbkFJIdYRby9YEo2SsKjU8'+'123',
             content: {
                 model: 'gpt-3.5-turbo-1106',
@@ -100,6 +97,10 @@
             const paramQ = urlParams.get('q');
             const paramI = urlParams.get('i');
 
+            // 如果是手机端,跳转到 index_m.html
+            if (!isMobile()) {
+                window.location.href = "index.html?q="+paramQ+"i="+paramI;
+            }
             if (paramQ) {
                 this.currentMessage = paramQ;
                 this.currentConversation = paramI;
@@ -111,6 +112,7 @@
                 this.currentConversation = index;
                 this.toggleSidebar();
             },
+
             sendMessage() {
                 if (this.currentMessage.trim()) {
                     this.conversations[this.currentConversation].messages.push({
@@ -126,57 +128,109 @@
                 let that = this;
                 let thatConversations = that.conversations;
                 let thatCurrentConversation = that.currentConversation;
-                fetch(this.api + '/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + this.apiKey,
-                        'content-type': 'application/json'
-                    },
-                    body: JSON.stringify(that.content)
-                }).then(response => {
-                    if (response.status === 429){
-                        thatConversations[thatCurrentConversation].messages.push({
-                            role: 'assistant',
-                            content: '请求限流'
-                        });
-                        return ;
-                    }else if (response.status !== 200){
-                        thatConversations[thatCurrentConversation].messages.push({
-                            role: 'assistant',
-                            content: '请求失败'
-                        });
-                        localStorage.removeItem('apiKey');
-                        this.apiKey = '';
-                        return ;
-                    }
-                    console.log(response)
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder('utf-8');
 
-                    thatConversations[thatCurrentConversation].messages.push({
-                        role: 'assistant',
-                        content: ''
+                if (this.currentApiProvider === 'openai') {
+                    fetch(this.api + '/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + this.apiKey,
+                            'content-type': 'application/json'
+                        },
+                        body: JSON.stringify(that.content)
+                    }).then(response => {
+                        if (response.status === 429){
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: '请求限流'
+                            });
+                            return ;
+                        }else if (response.status !== 200){
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: '请求失败'
+                            });
+                            localStorage.removeItem('apiKey');
+                            this.apiKey = '';
+                            return ;
+                        }
+                        console.log(response)
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder('utf-8');
+
+                        thatConversations[thatCurrentConversation].messages.push({
+                            role: 'assistant',
+                            content: ''
+                        });
+                        return reader.read().then(function processResult(result) {
+                            if (result.done) {
+                                return;
+                            }
+                            let message= decoder.decode(result.value, { stream: true });
+                            thatConversations[thatCurrentConversation].messages[thatConversations[thatCurrentConversation].messages.length-1].content += message
+                                .split('\n')
+                                .filter(item => item !== '')
+                                .map(item => item.replace('data:', ''))
+                                .map(itemText => {
+                                    try {
+                                        return JSON.parse(itemText).choices[0].delta.content;
+                                    } catch (e) {
+                                        return '';
+                                    }
+                                })
+                                .join('');
+                            return reader.read().then(processResult);
+                        });
                     });
-                    return reader.read().then(function processResult(result) {
-                        if (result.done) {
+                } else {
+                    let that = this;
+
+                    fetch(this.api +'/v1/models/gemini-pro:generateContent', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(that.convertJsonFormat(that.content))
+                    }).then(response => {
+                        if (response.status !== 200) {
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: 'Request failed'
+                            });
                             return;
                         }
-                        let message= decoder.decode(result.value, { stream: true });
-                        thatConversations[thatCurrentConversation].messages[thatConversations[thatCurrentConversation].messages.length-1].content += message
-                            .split('\n')
-                            .filter(item => item !== '')
-                            .map(item => item.replace('data:', ''))
-                            .map(itemText => {
-                                try {
-                                    return JSON.parse(itemText).choices[0].delta.content;
-                                } catch (e) {
-                                    return '';
-                                }
-                            })
-                            .join('');
-                        return reader.read().then(processResult);
+
+                        response.json().then(data => {
+                            thatConversations[thatCurrentConversation].messages.push({
+                                role: 'assistant',
+                                content: data.candidates[0].content.parts[0].text
+                            });
+                        });
                     });
-                });
+                }
+            },
+            convertJsonFormat(inputJson) {
+                // 创建目标JSON格式的对象
+                const outputJson = {
+                    contents: []
+                };
+
+                // 遍历输入JSON中的messages数组
+                for (const message of inputJson.messages) {
+                    // 创建目标JSON格式中的content对象
+                    const content = {
+                        role: message.role==="system"||message.role==="assistant"?"model":message.role,
+                        parts: [
+                            {
+                                text: message.content
+                            }
+                        ]
+                    };
+
+                    // 添加content对象到目标JSON的contents数组中
+                    outputJson.contents.push(content);
+                }
+
+                return outputJson;
             },
             saveApiKey() {
                 if (this.currentMessage.trim() !== '') {
